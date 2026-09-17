@@ -1,0 +1,26 @@
+{
+  "name": "pfs-data-analysis-agent-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "vite build && node scripts/build-chat.mjs",
+    "build:chat": "node scripts/build-chat.mjs",
+    "build:check": "node scripts/build-check.mjs",
+    "format": "prettier --write \"frontend/core/**/*.js\" \"frontend/entries/**/*.js\" \"scripts/*.mjs\" \"vite*.config.js\" \"eslint.config.js\" \"package.json\"",
+    "format:check": "prettier --check \"frontend/core/**/*.js\" \"frontend/entries/**/*.js\" \"scripts/*.mjs\" \"vite*.config.js\" \"eslint.config.js\" \"package.json\"",
+    "lint": "eslint \"frontend/**/*.js\" \"scripts/*.mjs\" \"vite*.config.js\"",
+    "quality": "pnpm format:check && pnpm lint && pnpm build:check && node scripts/python-quality.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.3",
+    "vite": "^7.0.0"
+  }
+}
