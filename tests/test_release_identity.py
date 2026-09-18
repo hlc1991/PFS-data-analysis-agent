@@ -116,6 +116,7 @@ class ReleaseIdentityTests(unittest.TestCase):
         self.assertTrue(read_text(PUBLIC_LICENSE_PATH).strip())
 
     def test_release_matrix_targets_windows_and_apple_silicon_only(self):
+        self.assertIn('PYTHON_VERSION: "3.12"', self.workflow)
         self.assertIn("name: Windows x64", self.workflow)
         self.assertIn("name: macOS Apple Silicon", self.workflow)
         self.assertNotIn("macos-15-intel", self.workflow)
