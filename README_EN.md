@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Desktop-macOS%20%2F%20Windows-0b5bd3.svg" alt="Desktop" />
 </p>
 
-> Current version: `0.1.0`. This desktop release focuses on local startup and reviewable analysis flows.
+> Current version: `0.1.1`. This desktop release focuses on local startup and reviewable analysis flows.
 
 PFS supports natural-language analysis, controlled data queries, chart generation, multi-format report delivery, and result-history review.
 
@@ -164,7 +164,7 @@ Keep model keys in local configuration or environment variables. Other legacy pr
 
 ## Version and platform boundary
 
-The current version targets local use on Windows x64 and macOS Apple Silicon. No macOS Intel installer is provided. Final installers and version numbers are published on [GitHub Releases](https://github.com/Lukanytsu7551/PFS-data-analysis-agent/releases).
+The current version targets local use on Windows x64 and macOS Apple Silicon. No macOS Intel installer is provided. Final installers and version numbers are published on [GitHub Releases](https://github.com/hlc1991/PFS-data-analysis-agent/releases).
 
 Business Canvas and Google Sheets are outside the current product scope. MCP, Teams, Hooks, and Feishu remain available as optional extension surfaces; cloud login and GPU/remote execution are retained but disabled by default and require explicit local configuration.
 

@@ -3,6 +3,13 @@ import { state as appState, state } from "../core/runtime.js";
 import { uiRegistry } from "../core/ui-registry.js";
 import { chatStream } from "../features/chat-stream.js";
 import { iconVNode } from "../core/icons.js";
+import {
+  getThemeBackground,
+  getThemeBackgroundCustomColor,
+  getThemeBackgroundOptions,
+  setThemeBackground,
+  setThemeBackgroundCustomColor,
+} from "../core/theme.js";
 
 const pfs = () => globalThis.PFS;
 
@@ -73,6 +80,15 @@ const pfs = () => globalThis.PFS;
     session_trash_restored: "会话恢复",
     artifact_registered: "产物登记",
   };
+  const BACKGROUND_PALETTE_LABELS = Object.freeze({
+    blue: "默认",
+    violet: "淡紫",
+    teal: "薄荷",
+    green: "草木",
+    rose: "暖粉",
+    orange: "米杏",
+  });
+  const BACKGROUND_PALETTE_OPTIONS = getThemeBackgroundOptions();
 
   function _enabledFromStorage() {
     return pfsStorage.get("prompt_suggestion_enabled", "1") !== "0";
@@ -131,6 +147,26 @@ const pfs = () => globalThis.PFS;
       }
       draw();
     }
+  }
+
+  function syncThemeBackgroundState() {
+    if (!uiState) return;
+    uiState.lightThemeBackground = getThemeBackground("light");
+    uiState.darkThemeBackground = getThemeBackground("dark");
+    uiState.lightThemeBackgroundCustomColor = getThemeBackgroundCustomColor("light");
+    uiState.darkThemeBackgroundCustomColor = getThemeBackgroundCustomColor("dark");
+  }
+
+  function setThemeBackgroundPreference(mode, palette) {
+    setThemeBackground(mode, palette);
+    syncThemeBackgroundState();
+    draw();
+  }
+
+  function setCustomThemeBackgroundPreference(mode, color) {
+    setThemeBackgroundCustomColor(mode, color);
+    syncThemeBackgroundState();
+    draw();
   }
 
   let uiState = null;
@@ -935,8 +971,51 @@ const pfs = () => globalThis.PFS;
   }
 
   function renderGeneral() {
+    const renderPalette = (mode, title, description) => {
+      const paletteKey = mode === "dark" ? "darkThemeBackground" : "lightThemeBackground";
+      const customColorKey = mode === "dark" ? "darkThemeBackgroundCustomColor" : "lightThemeBackgroundCustomColor";
+      const selectedPalette = uiState[paletteKey];
+      const customColor = uiState[customColorKey];
+      return Vue.h("section", { class: "theme-palette-card" }, [
+        Vue.h("div", { class: "theme-palette-copy" }, [
+          Vue.h("strong", null, title),
+          Vue.h("span", null, description),
+        ]),
+        Vue.h("div", { class: "theme-palette-grid", role: "radiogroup", "aria-label": `${title}背景色` }, [
+          ...BACKGROUND_PALETTE_OPTIONS.map((palette) => Vue.h("button", {
+            class: `theme-palette-option${selectedPalette === palette.id ? " is-selected" : ""}`,
+            type: "button",
+            role: "radio",
+            "aria-checked": String(selectedPalette === palette.id),
+            title: BACKGROUND_PALETTE_LABELS[palette.id],
+            onClick: () => setThemeBackgroundPreference(mode, palette.id),
+          }, [
+            Vue.h("span", { class: "theme-palette-dot", style: { background: palette.preview } }),
+            Vue.h("span", { class: "theme-palette-name" }, BACKGROUND_PALETTE_LABELS[palette.id]),
+          ])),
+          Vue.h("label", {
+            class: `theme-palette-option theme-palette-option-custom${selectedPalette === "custom" ? " is-selected" : ""}`,
+            role: "radio",
+            "aria-checked": String(selectedPalette === "custom"),
+            title: "自定义背景色",
+          }, [
+            Vue.h("span", { class: "theme-palette-dot", style: { background: customColor } }),
+            Vue.h("span", { class: "theme-palette-name" }, "自定义"),
+            Vue.h("input", {
+              type: "color",
+              value: customColor,
+              "aria-label": `${title}自定义背景色`,
+              onInput: (event) => setCustomThemeBackgroundPreference(mode, event.target.value),
+            }),
+          ]),
+        ]),
+      ]);
+    };
+
     return Vue.h("section", { class: "app-settings-panel" }, [
-      _renderPanelHead("通用", "提示建议、团队协作与记忆功能的总开关。", null),
+      _renderPanelHead("通用", "提示建议、团队协作、记忆与主题外观的总开关。", null),
+      renderPalette("light", "浅色模式背景", "浅色界面下使用的页面底色；可单独保存。"),
+      renderPalette("dark", "深色模式背景", "深色界面下使用的页面底色；可单独保存。"),
       Vue.h("label", { class: "app-setting-row" }, [
         Vue.h("span", { class: "app-setting-copy" }, [
           Vue.h("strong", null, "Prompt Suggestion"),
@@ -3074,6 +3153,10 @@ const pfs = () => globalThis.PFS;
     if (!root || !Vue?.h || !Vue?.render || !Vue?.reactive) return;
     uiState = Vue.reactive({
       tab: "general",
+      lightThemeBackground: getThemeBackground("light"),
+      darkThemeBackground: getThemeBackground("dark"),
+      lightThemeBackgroundCustomColor: getThemeBackgroundCustomColor("light"),
+      darkThemeBackgroundCustomColor: getThemeBackgroundCustomColor("dark"),
       promptSuggestionEnabled: appState.promptSuggestionEnabled,
       teamsEnabled: appState.teamsEnabled,
       autoMatchSkill: appState.autoMatchSkill,

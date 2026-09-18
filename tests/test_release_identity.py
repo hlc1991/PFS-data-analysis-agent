@@ -98,7 +98,7 @@ class ReleaseIdentityTests(unittest.TestCase):
         self.assertIn("SHA256SUMS.txt", self.workflow)
 
     def test_release_defaults_are_pfs_scoped_and_require_explicit_release_confirmation(self):
-        self.assertIn('default: "0.1.0"', self.workflow)
+        self.assertIn('default: "0.1.1"', self.workflow)
         self.assertNotIn('default: "1.2.0"', self.workflow)
         self.assertIn('release_confirmed:', self.workflow)
         self.assertIn('default: false', self.workflow)

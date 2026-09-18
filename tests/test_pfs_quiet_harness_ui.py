@@ -9,6 +9,9 @@ THEME = (ROOT / "static" / "css" / "pfs-theme.css").read_text(encoding="utf-8")
 SIDEBAR = (ROOT / "frontend" / "features" / "sidebar.js").read_text(encoding="utf-8")
 APP = (ROOT / "frontend" / "legacy" / "app.js").read_text(encoding="utf-8")
 APP_SETTINGS = (ROOT / "frontend" / "legacy" / "app_settings.js").read_text(encoding="utf-8")
+THEME_RUNTIME = (ROOT / "frontend" / "core" / "theme.js").read_text(encoding="utf-8")
+MODALS_CSS = (ROOT / "static" / "css" / "parts" / "modals.css").read_text(encoding="utf-8")
+LAYOUT_CSS = (ROOT / "static" / "css" / "parts" / "layout.css").read_text(encoding="utf-8")
 I18N = (ROOT / "frontend" / "legacy" / "i18n.js").read_text(encoding="utf-8")
 ICONS = (ROOT / "frontend" / "core" / "icons.js").read_text(encoding="utf-8")
 SKILLS = (ROOT / "frontend" / "features" / "skills.js").read_text(encoding="utf-8")
@@ -84,6 +87,53 @@ class QuietHarnessUiContractTests(unittest.TestCase):
         ):
             self.assertIn(token, THEME)
         self.assertIn("background-image: none !important", THEME)
+
+    def test_dark_composer_uses_readable_semantic_colours(self):
+        for token in (
+            '[data-theme="dark"] .composer-shell .input-card',
+            '[data-theme="dark"] .composer-group-context .composer-model',
+            '[data-theme="dark"] .composer-model-text',
+            "background: var(--color-surface) !important;",
+            "color: var(--color-text);",
+            "border-color: var(--color-border-strong);",
+        ):
+            self.assertIn(token, THEME)
+
+    def test_background_palette_is_mode_specific_and_persistent(self):
+        for token in (
+            'light: "pfs_theme_background_light"',
+            'dark: "pfs_theme_background_dark"',
+            'light: "pfs_theme_background_light_custom"',
+            'dark: "pfs_theme_background_dark_custom"',
+            "getThemeBackground",
+            "setThemeBackground",
+            "setThemeBackgroundCustomColor",
+            "applyThemeBackground(normalizedTheme)",
+            'new CustomEvent("themeBackgroundChange"',
+            '"--color-sidebar-bg"',
+            '"--color-surface-2"',
+            '"--color-border"',
+            'type: "color"',
+        ):
+            self.assertIn(token, THEME_RUNTIME + APP_SETTINGS)
+        for token in (
+            "theme-palette-card",
+            "theme-palette-grid",
+            "theme-palette-option",
+            "theme-palette-option-custom",
+            "theme-palette-dot",
+        ):
+            self.assertIn(token, MODALS_CSS)
+
+    def test_knowledge_panel_tabs_use_readable_surface_colours(self):
+        self.assertIn(
+            "#sb-panel-knowledge .kb-tab {\n  color: var(--color-text-soft);",
+            LAYOUT_CSS,
+        )
+        self.assertIn(
+            "#sb-panel-knowledge .kb-tab:hover {\n  color: var(--color-text);\n  background: var(--color-surface-2);",
+            LAYOUT_CSS,
+        )
 
     def test_public_surfaces_use_the_blue_white_icon_system(self):
         for token in (
@@ -174,6 +224,7 @@ class QuietHarnessUiContractTests(unittest.TestCase):
         for action in (
             "openModelPicker",
             "openComposerSkillPicker",
+            "newChat",
             "onSendOrStop",
         ):
             self.assertRegex(toolbar, rf'data-action="{action}"')
@@ -184,12 +235,12 @@ class QuietHarnessUiContractTests(unittest.TestCase):
         self.assertNotIn('id="composer-permission-wrap"', toolbar)
         self.assertNotIn('id="token-bar-wrap"', toolbar)
         self.assertEqual(toolbar.count('data-composer-group='), 2)
-        self.assertEqual(toolbar.count('data-composer-tool='), 4)
+        self.assertEqual(toolbar.count('data-composer-tool='), 5)
         self.assertGreaterEqual(toolbar.count("data-pfs-icon="), 5)
         self.assertEqual(TEMPLATE.count("<svg"), 0)
         self.assertNotRegex(toolbar, r'[\U0001F300-\U0001FAFF]')
         self.assertNotRegex(toolbar, r'[▦⤢⤡⌄▾⛶↩☀🌙＋×]')
-        for icon_name in ("cpu", "spark", "expand", "collapse", "arrowUp", "stop"):
+        for icon_name in ("cpu", "spark", "filePlus", "expand", "collapse", "arrowUp", "stop"):
             self.assertIn(f'data-pfs-icon="{icon_name}"', toolbar)
             self.assertRegex(ICONS, rf'(?m)^  {icon_name}:')
 
@@ -251,6 +302,50 @@ class QuietHarnessUiContractTests(unittest.TestCase):
         self.assertIn("ui?.isVue", SESSIONS)
         self.assertIn("window.confirm", SESSIONS)
         self.assertIn("if (!r.ok || !d || d.ok === false || d.error)", SESSIONS)
+
+    def test_append_now_waits_for_server_stop_before_continuing(self):
+        """Queued context must not race the canceled server-side turn."""
+        queue_start = CHAT_STREAM.index("async function _sendQueuedNow")
+        queue_end = CHAT_STREAM.index("function _showActiveTurnActivity", queue_start)
+        queue_handler = CHAT_STREAM[queue_start:queue_end]
+        stop_start = CHAT_STREAM.index("async function stopStreaming")
+        stop_end = CHAT_STREAM.index("function _setSendBtnStopping", stop_start)
+        stop_handler = CHAT_STREAM[stop_start:stop_end]
+
+        self.assertIn("_mergeContinuationPayload", queue_handler)
+        self.assertIn("state.silentContinuation = true", queue_handler)
+        self.assertIn("await stopStreaming()", queue_handler)
+        self.assertIn("_drainMessageQueue();", CHAT_STREAM)
+        self.assertNotIn("_streamReader.cancel", stop_handler)
+
+    def test_append_now_submits_queued_text_to_an_ask_user_card(self):
+        """An ask_user card has no live stream to stop before continuation."""
+        queue_start = CHAT_STREAM.index("async function _sendQueuedNow")
+        queue_end = CHAT_STREAM.index("function _showActiveTurnActivity", queue_start)
+        queue_handler = CHAT_STREAM[queue_start:queue_end]
+
+        self.assertIn("if (state.askUserPending)", queue_handler)
+        self.assertIn("_inheritAskUserActivation(item.payload)", queue_handler)
+        self.assertIn("await sendConfirmStream(item.payload)", queue_handler)
+        self.assertLess(
+            queue_handler.index("if (state.askUserPending)"),
+            queue_handler.index("await stopStreaming()"),
+        )
+
+    def test_pause_intent_is_never_sent_as_queued_analysis_context(self):
+        """Pause requests stop the active turn instead of answering ask_user."""
+        queue_start = CHAT_STREAM.index("async function _sendQueuedNow")
+        queue_end = CHAT_STREAM.index("function _showActiveTurnActivity", queue_start)
+        queue_handler = CHAT_STREAM[queue_start:queue_end]
+
+        self.assertIn("function _isPauseIntent", CHAT_STREAM)
+        self.assertIn("可以了|好的|好|先", CHAT_STREAM)
+        self.assertIn("if (_isPauseIntent(item.payload.message))", queue_handler)
+        self.assertIn("if (state.askUserPending) _cancelAskUser()", queue_handler)
+        self.assertLess(
+            queue_handler.index("if (_isPauseIntent(item.payload.message))"),
+            queue_handler.index("await sendConfirmStream(item.payload)"),
+        )
 
     def test_navigation_and_model_catalog_match_the_distilled_workbench(self):
         status_start = TEMPLATE.index('<section class="sb-status">')

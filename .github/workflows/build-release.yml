@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Package version without v prefix, for example 0.1.0"
+        description: "Package version without v prefix, for example 0.1.1"
         required: false
-        default: "0.1.0"
+        default: "0.1.1"
       release_confirmed:
         description: "Confirm that final feature and business acceptance is complete"
         required: true

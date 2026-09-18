@@ -1172,12 +1172,12 @@ body.focus-mode #btn-focus-mode,
   flex-shrink: 0;
 }
 #sb-panel-knowledge .kb-tab {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-soft);
   border-bottom-color: transparent;
 }
 #sb-panel-knowledge .kb-tab:hover {
-  color: #fff;
-  background: var(--color-sidebar-hover);
+  color: var(--color-text);
+  background: var(--color-surface-2);
 }
 #sb-panel-knowledge .kb-list {
   scrollbar-width: thin;

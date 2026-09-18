@@ -43,6 +43,13 @@ function onSendOrStop() {
   } else sendMessage();
 }
 
+function _isPauseIntent(message) {
+  const normalized = String(message || "")
+    .trim()
+    .replace(/[\s，,。.!！?？]/g, "");
+  return /^(?:可以了|好的|好|先)?(?:暂停|停止|停一下|先停下)(?:吧)?$/.test(normalized);
+}
+
 function _cancelAskUser() {
   // User clicked stop while ask_user card is open — cancel the turn.
   state.askUserPending = false;
@@ -71,7 +78,8 @@ function _cancelAskUser() {
   state.activeTurn = null;
   syncSendButton();
   // Show a stop note before the last assistant bubble.
-  const lastAssistant = document.querySelector(".msg-row.assistant:last-child .msg-bubble");
+  const lastAssistant = curAssistant?.querySelector(".msg-bubble")
+    || document.querySelector(".msg-row.assistant:last-child .msg-bubble");
   if (lastAssistant) {
     const stopNote = document.createElement("div");
     stopNote.className = "stop-note";
@@ -86,11 +94,11 @@ async function stopStreaming() {
   try {
     await fetch(`/api/session/${state.SID}/stop`, { method: "POST" });
   } catch (_) {}
-  if (state._streamReader) {
-    try {
-      state._streamReader.cancel();
-    } catch (_) {}
-  }
+  // Keep consuming the current SSE response until the server emits its
+  // terminal stopped/done events. Cancelling the reader here lets the local
+  // FIFO start a follow-up before the server has stopped the original turn;
+  // the follow-up can then clear the shared cancellation flag and lose the
+  // user's appended context.
 }
 
 function _setSendBtnStopping(stopping) {
@@ -262,18 +270,58 @@ function _cancelQueued(queueId) {
   if (index < 0) return;
   const [item] = state.pendingMessages.splice(index, 1);
   if (state.editingQueuedId === queueId) state.editingQueuedId = "";
+  _removeQueuedTurnShell(item);
+  _refreshQueuePositions();
+}
+
+function _removeQueuedTurnShell(item) {
   if (getUiIsland("chat")?.removeMessages) {
     getUiIsland("chat").removeMessages([item.userId, item.assistantId]);
   } else {
     _queueFacade(item.assistantId, "canceled", 0);
   }
-  _refreshQueuePositions();
+}
+
+function _removeQueuedAssistantShell(item) {
+  getUiIsland("chat")?.removeMessages?.([item.assistantId]);
+}
+
+function _inheritAskUserActivation(payload) {
+  const activePayload = state.activeTurn?.payload || {};
+  if (!payload.skill && activePayload.skill) payload.skill = activePayload.skill;
+  if (!payload.command && activePayload.command) payload.command = activePayload.command;
 }
 
 async function _sendQueuedNow(queueId) {
   const index = state.pendingMessages.findIndex((item) => item.id === queueId);
   if (index < 0) return;
   const [item] = state.pendingMessages.splice(index, 1);
+  state.editingQueuedId = "";
+
+  // A queued pause command controls the current turn; it must never be
+  // submitted as data-analysis context or as an answer to an ask_user card.
+  if (_isPauseIntent(item.payload.message)) {
+    _removeQueuedAssistantShell(item);
+    _refreshQueuePositions();
+    if (state.askUserPending) _cancelAskUser();
+    else if (state.isStreaming) await stopStreaming();
+    return;
+  }
+
+  // ask_user has already ended its server stream and is waiting for a human
+  // answer. There is no active request to stop, so submit the queued text as
+  // that answer directly instead of leaving it in a FIFO that cannot drain.
+  if (state.askUserPending) {
+    _removeQueuedTurnShell(item);
+    _inheritAskUserActivation(item.payload);
+    document.querySelectorAll(".ask-user-card button, .ask-user-card input").forEach((control) => {
+      control.disabled = true;
+    });
+    _refreshQueuePositions();
+    await sendConfirmStream(item.payload);
+    return;
+  }
+
   if (state.isStreaming) {
     state.silentContinuation = true;
     _showActiveTurnActivity();
@@ -282,7 +330,6 @@ async function _sendQueuedNow(queueId) {
     }
   }
   state.pendingMessages.unshift(item);
-  state.editingQueuedId = "";
   _refreshQueuePositions();
   if (state.isStreaming) await stopStreaming();
   else _drainMessageQueue();
@@ -941,6 +988,13 @@ async function sendMessage() {
   if (selectedSkill) payload.skill = selectedSkill;
   clearCmd();
   clearSkill();
+  if (state.isStreaming && _isPauseIntent(text)) {
+    if (state.askUserPending) _cancelAskUser();
+    else await stopStreaming();
+    appendMsg("user", displayText);
+    scrollBottom(true);
+    return;
+  }
   if (state.editingQueuedId) {
     const item = state.pendingMessages.find((candidate) => candidate.id === state.editingQueuedId);
     state.editingQueuedId = "";

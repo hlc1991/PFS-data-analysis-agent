@@ -3021,3 +3021,43 @@ body.pfs-picker-open .input-area {
   .composer-skill .composer-label,
   .composer-skill .composer-chev { display: none; }
 }
+
+/* The final light-composer refinement uses explicit white surfaces. Restore
+   semantic dark tokens here so model names and their icons stay legible. */
+[data-theme="dark"] .composer-shell {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .composer-shell .input-card {
+  background: var(--color-surface) !important;
+}
+[data-theme="dark"] .composer-toolbar {
+  border-top-color: var(--color-border-soft);
+  background: var(--color-surface-2);
+}
+[data-theme="dark"] .composer-group-context .composer-model,
+[data-theme="dark"] .composer-tool,
+[data-theme="dark"] .composer-expand-btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+[data-theme="dark"] .composer-model-text,
+[data-theme="dark"] .composer-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .composer-model-mark {
+  background: var(--color-surface-3);
+  color: var(--color-primary);
+}
+[data-theme="dark"] .composer-model .composer-chev {
+  color: var(--color-text-soft);
+}
+[data-theme="dark"] .composer-group-context .composer-model:hover,
+[data-theme="dark"] .composer-group-context .composer-model[aria-expanded="true"],
+[data-theme="dark"] .composer-tool:hover,
+[data-theme="dark"] .composer-expand-btn:hover {
+  border-color: var(--color-primary-tint);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}

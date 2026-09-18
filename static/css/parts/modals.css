@@ -4966,6 +4966,92 @@
 .app-setting-switch input:checked + span::before {
   transform: translateX(20px);
 }
+.theme-palette-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+.theme-palette-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.theme-palette-copy strong {
+  color: var(--color-text);
+  font-size: var(--fs-md);
+}
+.theme-palette-copy span {
+  color: var(--color-text-soft);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+.theme-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+.theme-palette-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 9px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 650;
+  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
+}
+.theme-palette-option:hover {
+  border-color: var(--color-primary-tint);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.theme-palette-option.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+  color: var(--color-primary);
+}
+.theme-palette-dot {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 20%);
+}
+.theme-palette-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-palette-option-custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.theme-palette-option:focus-visible,
+.theme-palette-option-custom:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
 .bge-model-info {
   display: flex;
   gap: 8px;

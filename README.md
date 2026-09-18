@@ -28,7 +28,7 @@
   <a href="#faq">❓ FAQ</a>
 </p>
 
-> 当前版本：`0.1.0`。当前正式版以本地桌面运行、结构化数据分析和跨平台启动为重点。
+> 当前版本：`0.1.1`。当前正式版以本地桌面运行、结构化数据分析和跨平台启动为重点。
 
 PFS 支持自然语言分析、受控数据查询、图表生成、多格式报告交付和结果历史回看。
 
@@ -173,7 +173,7 @@ docker run --rm -p 5001:5001 pfs-data-analysis-agent:local
 
 ## 版本与平台边界
 
-当前版本面向 Windows x64 和 macOS Apple Silicon 的本地运行，不提供 macOS Intel 安装包。正式安装包和版本号以 [GitHub Releases](https://github.com/Lukanytsu7551/PFS-data-analysis-agent/releases) 页面为准。
+当前版本面向 Windows x64 和 macOS Apple Silicon 的本地运行，不提供 macOS Intel 安装包。正式安装包和版本号以 [GitHub Releases](https://github.com/hlc1991/PFS-data-analysis-agent/releases) 页面为准。
 
 商业画布与 Google Sheets 不属于当前产品范围。MCP、Teams、Hooks 和飞书保留为可选扩展入口；云端登录与 GPU/远程执行入口保留但默认关闭，需要用户明确配置后才会尝试运行。
 

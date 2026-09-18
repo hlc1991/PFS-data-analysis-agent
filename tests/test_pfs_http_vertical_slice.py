@@ -3,10 +3,12 @@ import uuid
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import pandas as pd
 
 from api import create_app
+from api.chat import _has_analysis_context
 from api.state import session_manager
 
 
@@ -234,7 +236,25 @@ class PfsHttpVerticalSliceTests(unittest.TestCase):
         self.assertIn("4400", body)
         self.assertIn("Claim", body)
 
-    def test_chat_deterministic_mode_requires_source(self):
+    def test_chat_without_data_source_or_workspace_returns_fixed_guidance(self):
+        response = self.client.post(
+            f"/api/session/{self.sid}/chat",
+            json={"message": "请分析本月销售情况"},
+        )
+
+        self.assertEqual(200, response.status_code)
+        body = response.get_data(as_text=True)
+        self.assertIn("请添加数据源或者关联需分析的工作目录", body)
+        self.assertIn('"type": "done"', body)
+        session = session_manager.get(self.sid)
+        self.assertEqual("请添加数据源或者关联需分析的工作目录", session.history[-1]["content"])
+
+    def test_chat_context_guard_accepts_mounted_workspace_without_data_source(self):
+        session = session_manager.get(self.sid)
+        with patch("data.workspace.workspace_manager.get", return_value=object()):
+            self.assertTrue(_has_analysis_context(session, self.sid))
+
+    def test_chat_deterministic_mode_without_context_returns_fixed_guidance(self):
         response = self.client.post(
             f"/api/session/{self.sid}/chat",
             json={
@@ -242,8 +262,11 @@ class PfsHttpVerticalSliceTests(unittest.TestCase):
                 "pfs_mode": "deterministic",
             },
         )
-        self.assertEqual(400, response.status_code)
-        self.assertEqual("pfs_source_required", response.get_json()["code"])
+        self.assertEqual(200, response.status_code)
+        self.assertIn(
+            "请添加数据源或者关联需分析的工作目录",
+            response.get_data(as_text=True),
+        )
 
     def test_chat_deterministic_mode_rejects_ambiguous_question(self):
         uploaded = self._upload()

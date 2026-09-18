@@ -15,7 +15,7 @@ PRODUCT_TAGLINE = os.environ.get(
     "PFS_PRODUCT_TAGLINE",
     "可追踪、可核验的数据分析工作台",
 ).strip()
-_DEFAULT_PRODUCT_VERSION = "0.1.0"
+_DEFAULT_PRODUCT_VERSION = "0.1.1"
 _FROZEN_PRODUCT_METADATA = "pfs-product-metadata.json"
 _FROZEN_VERSION_KEYS = (
     "PFSProductVersion",
@@ -28,7 +28,7 @@ SERVICE_ID = "pfs-data-analysis-agent"
 PRODUCT_ICON = "Images/pfs-mark.svg"
 PRODUCT_REPOSITORY_URL = os.environ.get(
     "PFS_REPOSITORY_URL",
-    "https://github.com/Lukanytsu7551/PFS-data-analysis-agent",
+    "https://github.com/hlc1991/PFS-data-analysis-agent",
 ).strip()
 
 

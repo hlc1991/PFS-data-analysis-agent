@@ -92,6 +92,60 @@ Return only the message text that should be prefilled in the chat input.
 Do not explain, do not quote, do not use markdown, and do not mention that this is a suggestion.
 Keep it short, concrete, and directly actionable."""
 
+_ANALYSIS_CONTEXT_REQUIRED_MESSAGE = "请添加数据源或者关联需分析的工作目录"
+
+
+def _has_analysis_context(sess, sid: str) -> bool:
+    """Return whether this conversation has a source or mounted workspace.
+
+    A new chat must not call the model based on stale or imagined workspace
+    state. Either an active data source or a currently mounted workspace is
+    sufficient: the latter supports file-oriented work before a tabular source
+    is registered.
+    """
+    if hasattr(sess, "_active_entries") and sess._active_entries():
+        return True
+    from data.workspace import workspace_manager
+
+    return workspace_manager.get(sid) is not None
+
+
+def _analysis_context_required_response(sess, message: str) -> Response:
+    """Persist and stream the fixed no-context guidance without using an LLM."""
+    from agent.events import serialize_event
+
+    sess.add_user(message)
+    sess.add_assistant(_ANALYSIS_CONTEXT_REQUIRED_MESSAGE)
+
+    def generate():
+        yield (
+            "data: "
+            + json.dumps(
+                serialize_event(
+                    {
+                        "type": "text",
+                        "content": _ANALYSIS_CONTEXT_REQUIRED_MESSAGE,
+                    }
+                ),
+                ensure_ascii=False,
+            )
+            + "\n\n"
+        )
+        yield (
+            "data: "
+            + json.dumps(serialize_event({"type": "done"}), ensure_ascii=False)
+            + "\n\n"
+        )
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+        },
+    )
+
 
 def format_feishu_ask_user(event: dict) -> str:
     """Render a Web-only choice card as a replyable Feishu text message."""
@@ -873,6 +927,9 @@ def chat_stream(sid: str):
                 "code": "quota_exceeded",
                 "quota": quota,
             }), 403
+    if not _has_analysis_context(sess, sid):
+        log.info("[chat] analysis context required sid=%s", sid)
+        return _analysis_context_required_response(sess, message)
     pfs_response = _pfs_deterministic_chat_response(sid, message, d, sess)
     if pfs_response is not None:
         return pfs_response

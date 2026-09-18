@@ -186,7 +186,7 @@ coll = COLLECT(
 )
 
 if sys.platform == "darwin":
-    bundle_version = (raw_product_version or "0.1.0").split("-", 1)[0].split("+", 1)[0]
+    bundle_version = (raw_product_version or "0.1.1").split("-", 1)[0].split("+", 1)[0]
     app = BUNDLE(
         coll,
         name="PFS Data Analysis Agent.app",

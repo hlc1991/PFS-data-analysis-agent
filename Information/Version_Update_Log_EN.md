@@ -1,5 +1,18 @@
 # PFS Release Notes
 
+## 0.1.1 · 2026-09-18
+
+### Experience improvements
+
+- New conversations without a data source or workspace now consistently request analysis context first.
+- Fixed pause, queued follow-up, and composer new-chat interactions.
+- Improved the coordinated light/dark background system, composer contrast, and knowledge-tab readability.
+- Added the developer credit to the help document.
+
+### Validation status
+
+- Completed frontend build, code checks, and core HTTP/UI regression tests.
+
 ## 0.1.0 · 2026-09-09
 
 ### Product capabilities
